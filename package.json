@@ -1,6 +1,6 @@
 {
   "name": "asq",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "ASQ Survey — an ACI Airport Service Quality departures questionnaire running as a gate kiosk, emailing every completed response as structured data.",
   "scripts": {
     "serve": "python -m http.server 4211 --directory www",
@@ -14,7 +14,8 @@
   "dependencies": {
     "@capacitor/android": "^8.4.2",
     "@capacitor/cli": "^8.4.2",
-    "@capacitor/core": "^8.4.2"
+    "@capacitor/core": "^8.4.2",
+    "@capacitor/filesystem": "^8.1.3"
   },
   "devDependencies": {
     "jsqr": "^1.4.0",

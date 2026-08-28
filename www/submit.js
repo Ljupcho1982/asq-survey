@@ -22,7 +22,9 @@
 })(typeof self !== "undefined" ? self : this, function (Q) {
 
   const ENDPOINT = "https://formsubmit.co/ajax/";
-  const APP_VERSION = "1.0.0";
+  /* Kept in step with package.json by the selftest — a payload that misreports
+     which build produced it is worse than one with no version at all. */
+  const APP_VERSION = "1.1.0";
 
   /* ------------------------------------------------------------------ ids */
 
@@ -38,7 +40,15 @@
   function buildPayload(answers, settings, timing) {
     const t = timing || {};
     const ratings = {};
-    Q.ITEMS.forEach((i) => { if (answers[i.id] !== undefined) ratings[i.id] = answers[i.id]; });
+    /* A passenger can rate the connection item, go Back, and change Q2 to "No".
+       The screen then hides the item but the answer is still in memory — so it
+       is dropped here rather than shipping a rating for a connection that never
+       happened. The UI gate alone is not enough. */
+    const connecting = answers.q2_connection === "Yes";
+    Q.ITEMS.forEach((i) => {
+      if (i.connectingOnly && !connecting) return;
+      if (answers[i.id] !== undefined) ratings[i.id] = answers[i.id];
+    });
     Q.OVERALL.forEach((o) => { if (answers[o.id] !== undefined) ratings[o.id] = answers[o.id]; });
 
     const emotions = {};
@@ -183,10 +193,45 @@
     return body;
   }
 
+  /* ------------------------------------------------------------- delivery
+   * Routes one response to whichever channels are configured. A response counts
+   * as delivered only when every configured channel took it — so in "both" mode
+   * a working CSV write plus a failing email leaves the record pending and it is
+   * retried. That retry must NOT append the row a second time, which is what
+   * `csvWritten` on the record is for.
+   *
+   * sink: { append(payload, settings, allPayloads) }
+   * deps.allPayloads(): everything stored, for the download fallback that has to
+   * rebuild the whole file.
+   */
+  function makeDeliverer(sink, getSettings, deps) {
+    const d = deps || {};
+    const sendFn = d.send || send;
+    const persist = d.persist || (async () => {});
+    const allPayloads = d.allPayloads || (async () => []);
+
+    return async function deliver(payload, record) {
+      const settings = getSettings();
+      const mode = settings.delivery || "csv";
+
+      if (mode !== "email" && !(record && record.csvWritten)) {
+        await sink.append(payload, settings, await allPayloads());
+        if (record) {
+          record.csvWritten = true;
+          /* Remembered before the email is attempted, so a crash between the two
+             still cannot duplicate the row. */
+          try { await persist(record); } catch (e) { /* retried next flush */ }
+        }
+      }
+
+      if (mode !== "csv") await sendFn(payload, settings);
+    };
+  }
+
   return {
     ENDPOINT, APP_VERSION, META_COLUMNS,
     responseId, buildPayload, formatAnswer, flatten,
     csvEscape, csvHeader, csvRow, csvDocument,
-    buildFields, endpointFor, send
+    buildFields, endpointFor, send, makeDeliverer
   };
 });

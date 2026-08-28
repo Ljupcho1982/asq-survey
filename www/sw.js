@@ -2,9 +2,9 @@
    tablet has to keep collecting through a Wi-Fi outage, so every asset is
    served from the cache first and the network is only ever a fallback.
    Responses queue in IndexedDB; the service worker has no part in sending. */
-const CACHE = "asq-v1.0.0";
+const CACHE = "asq-v1.1.0";
 const SHELL = ["index.html", "styles.css", "questionnaire.js", "store.js", "submit.js",
-               "app.js", "manifest.json", "icon.svg", "icon-maskable.svg"];
+               "csv-sink.js", "app.js", "manifest.json", "icon.svg", "icon-maskable.svg"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));

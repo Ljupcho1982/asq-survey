@@ -65,14 +65,38 @@
 
     <div id="settingsStep" hidden>
       <label class="field">
-        <span>Recipient — email address, or the FormSubmit alias</span>
-        <input id="setRecipient" type="text" autocomplete="off" spellcheck="false"
-               placeholder="name@example.org">
+        <span>Where do completed responses go?</span>
+        <select id="setDelivery" class="select">
+          <option value="csv">CSV file on this device</option>
+          <option value="email">Email</option>
+          <option value="both">Both — CSV file and email</option>
+        </select>
       </label>
-      <p class="note" id="recipientNote">
-        On the first submission FormSubmit emails a confirmation link. Click it, then
-        paste the alias it replies with here so the plain address leaves the device.
-      </p>
+
+      <div id="csvBox" class="queue-box">
+        <label class="field">
+          <span>CSV file name</span>
+          <input id="setCsvName" type="text" autocomplete="off" spellcheck="false"
+                 placeholder="asq-responses.csv">
+        </label>
+        <p class="note" id="csvWhere">Checking where the file can be written…</p>
+        <div class="sheet-actions left">
+          <button id="csvPickBtn" class="btn ghost" hidden>Choose the CSV file…</button>
+          <button id="csvOpenBtn" class="btn ghost" hidden>Save a copy now</button>
+        </div>
+      </div>
+
+      <div id="emailBox">
+        <label class="field">
+          <span>Recipient — email address, or the FormSubmit alias</span>
+          <input id="setRecipient" type="text" autocomplete="off" spellcheck="false"
+                 placeholder="name@example.org">
+        </label>
+        <p class="note" id="recipientNote">
+          On the first submission FormSubmit emails a confirmation link. Click it, then
+          paste the alias it replies with here so the plain address leaves the device.
+        </p>
+      </div>
 
       <div class="field-row">
         <label class="field"><span>Airport</span>
@@ -113,6 +137,7 @@
 <script src="questionnaire.js"></script>
 <script src="store.js"></script>
 <script src="submit.js"></script>
+<script src="csv-sink.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

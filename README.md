@@ -21,33 +21,53 @@ instrument continuously, so the numbers between reports are directly comparable 
 
 ---
 
-## First run
+## Where responses go
 
-1. Open the app, tap the **logo five times** (within a second of each other), enter the PIN — the
-   default is `1982`, change it in the same screen.
-2. Put your address in **Recipient**, set **Airport** / **Terminal** / **Gate**, and Save.
-3. Complete one survey. FormSubmit emails you a confirmation link — click it. Until you do,
+Set this in Settings — tap the **logo five times** (quickly), PIN `1982` by default.
+
+| Mode | What happens |
+|---|---|
+| **CSV file** *(default)* | Each response is appended as a row to a CSV file on the device |
+| **Email** | Each response is emailed through FormSubmit |
+| **Both** | Both, and a response only counts as delivered once each has taken it |
+
+A response is written to IndexedDB **before** any of this is attempted, so nothing is ever lost if a
+write or a send fails — it stays `pending` and is retried. The header badge shows the backlog.
+
+### CSV file
+
+Where the file lands depends on the platform, and Settings tells you which case you're in:
+
+| Platform | Behaviour |
+|---|---|
+| **Android APK** | Appends to `Documents/ASQ/asq-responses.csv`. Automatic — nothing to set up. Pull it off over USB or with any file manager. |
+| **Desktop Chrome / Edge** | Click **Choose the CSV file…** once and pick where it goes. Every later response appends to that same file, no further prompting. |
+| **Firefox / Safari / iOS** | No append API exists, so each response re-downloads the whole CSV to your Downloads folder. Workable, but use Chrome or Edge if you can. |
+
+The file opens straight in Excel: it starts with a UTF-8 BOM so `č`, `š` and `é` render correctly,
+the header is written once, and columns come from a fixed question order — a skipped question leaves
+an empty cell rather than shifting every column after it. Ratings are stored raw (`4`, or `na`).
+
+On desktop the browser forgets file permission when it restarts, so Settings will say *needs
+reconnecting* — one click restores it, and queued responses flush immediately.
+
+### Email
+
+1. Put your address in **Recipient** and Save.
+2. Complete one survey. FormSubmit emails you a confirmation link — click it. Until you do,
    submissions stay queued rather than being lost; the app treats an unconfirmed address as a
    failure on purpose, because FormSubmit answers HTTP 200 with `success:"false"` in that state.
-4. FormSubmit replies with a **random alias**. Paste that into Recipient in place of your address,
+3. FormSubmit replies with a **random alias**. Paste that into Recipient in place of your address,
    so the plain address is no longer stored on a device sitting in a departure hall.
 
 The recipient is deliberately **not** in any source file. It is typed in on the device.
 
-## What arrives in your inbox
+Each email carries the same response three ways: a `Question → Answer` table (readable as-is, with
+ratings as `4 — Very good`), `payload_json` for parsing, and `csv_header` + `csv_row` for pasting
+into a spreadsheet. The subject is `ASQ SKP — <response id> — <date>`.
 
-One email per response, carrying the same data three ways:
-
-| Part | For |
-|---|---|
-| A `Question → Answer` table | Reading it as an email, no tooling needed |
-| `payload_json` | The full nested response, for parsing |
-| `csv_header` + `csv_row` | Pasting straight into Excel |
-
-Ratings read as `4 — Very good` in the table and as a bare `4` in the CSV. Columns come from a fixed
-question order, so a skipped question leaves an empty cell instead of shifting every column after it.
-
-The subject line is `ASQ SKP — <response id> — <date>`.
+**Export CSV** in Settings writes everything currently stored to a file at any time, whatever the
+delivery mode.
 
 ## Kiosk behaviour
 
@@ -100,9 +120,10 @@ then decodes it back to prove the code actually resolves.
 ```
 www/questionnaire.js   the instrument as data — 31 items, scales, profiling questions, the flow
 www/store.js           settings + the IndexedDB submission queue
-www/submit.js          payload, flatten, CSV, the FormSubmit POST
+www/submit.js          payload, flatten, CSV, the FormSubmit POST, delivery routing
+www/csv-sink.js        appending to a file: Capacitor / File System Access / download
 www/app.js             the kiosk: screens, validation, idle reset, wake lock, settings
-tools/selftest.js      106 checks, no network
+tools/selftest.js      126 checks, no network
 android-res/           vector launcher icons (this machine has no SVG rasterizer)
 ```
 

@@ -9,6 +9,7 @@ const www = (f) => path.join(__dirname, "..", "www", f);
 const Q = require(www("questionnaire.js"));
 const Store = require(www("store.js"));
 const Submit = require(www("submit.js"));
+const CsvSink = require(www("csv-sink.js"));
 
 let pass = 0, fail = 0;
 function ok(name, cond, extra) {
@@ -164,8 +165,27 @@ ok("kiosk context is carried", full.meta.airport === "SKP" && full.meta.terminal
   full.meta.gate === "A3");
 ok("duration is recorded in seconds", full.meta.durationSeconds >= 209 && full.meta.durationSeconds <= 212,
   full.meta.durationSeconds);
-ok("ratings hold 31 items + 2 overall", Object.keys(full.ratings).length === 33,
-  Object.keys(full.ratings).length);
+/* fullAnswers() says q2_connection "No", so the connection item is dropped: 30 + 2. */
+ok("ratings hold 30 items + 2 overall for a non-connecting passenger",
+  Object.keys(full.ratings).length === 32, Object.keys(full.ratings).length);
+ok("a stale connection rating is dropped when Q2 says No",
+  full.ratings.thr_connection === undefined, full.ratings.thr_connection);
+
+{
+  /* Same answers, Q2 flipped — the item comes back rather than being lost. */
+  const a = fullAnswers();
+  a.q2_connection = "Yes";
+  const connecting = Submit.buildPayload(a, settings, {});
+  ok("a connecting passenger keeps all 31 items + 2 overall",
+    Object.keys(connecting.ratings).length === 33, Object.keys(connecting.ratings).length);
+  ok("the connection rating survives when Q2 says Yes",
+    connecting.ratings.thr_connection !== undefined);
+}
+
+ok("the payload reports the package version",
+  Submit.APP_VERSION === require(path.join(__dirname, "..", "package.json")).version,
+  Submit.APP_VERSION + " vs package.json " +
+    require(path.join(__dirname, "..", "package.json")).version);
 ok("emotions hold 5", Object.keys(full.emotions).length === 5);
 ok("open-ended text survives verbatim", full.openEnded.open_improve.includes("\n"));
 
@@ -283,6 +303,12 @@ const ls = fakeStorage();
 ok("defaults ship with a blank recipient", Store.loadSettings(ls).recipient === "",
   JSON.stringify(Store.loadSettings(ls).recipient));
 ok("defaults name SKP", Store.loadSettings(ls).airport === "SKP");
+/* CSV is the default because it needs no setup at all — email additionally
+   requires an address and a confirmation click before anything is delivered. */
+ok("delivery defaults to the CSV file", Store.loadSettings(ls).delivery === "csv",
+  Store.loadSettings(ls).delivery);
+ok("a default CSV file name is set", /\.csv$/.test(Store.loadSettings(ls).csvFileName),
+  Store.loadSettings(ls).csvFileName);
 Store.saveSettings({ recipient: "ops@example.org" }, ls);
 ok("a saved value persists", Store.loadSettings(ls).recipient === "ops@example.org");
 ok("saving one field keeps the others", Store.loadSettings(ls).airport === "SKP");
@@ -409,6 +435,91 @@ group("Queue — state machine");
     return { ok: true, json: async () => ({ success: "true" }) };
   });
   ok("a successful send resolves", okBody && String(okBody.success) === "true");
+
+  group("Delivery routing");
+
+  function fakeSink() {
+    const rows = [];
+    return { rows, async append(payload) { rows.push(payload.meta.responseId); } };
+  }
+
+  {
+    /* csv-only never touches the mail path — so a kiosk with no recipient set
+       still delivers, which is the whole point of the CSV mode. */
+    const sink = fakeSink();
+    let mailed = 0;
+    const deliver = Submit.makeDeliverer(sink, () => ({ delivery: "csv" }),
+      { send: async () => { mailed++; } });
+    const rec = { id: "a", csvWritten: false };
+    await deliver(full, rec);
+    ok("csv mode writes the row", sink.rows.length === 1);
+    ok("csv mode sends no email", mailed === 0);
+    ok("csv mode marks the row written", rec.csvWritten === true);
+  }
+
+  {
+    const sink = fakeSink();
+    let mailed = 0;
+    const deliver = Submit.makeDeliverer(sink, () => ({ delivery: "email" }),
+      { send: async () => { mailed++; } });
+    await deliver(full, { id: "b", csvWritten: false });
+    ok("email mode writes no CSV row", sink.rows.length === 0);
+    ok("email mode sends the email", mailed === 1);
+  }
+
+  {
+    /* The case that would corrupt the file: CSV succeeds, email fails, the queue
+       retries. The row must be written exactly once across both attempts. */
+    const sink = fakeSink();
+    let attempts = 0;
+    const deliver = Submit.makeDeliverer(sink, () => ({ delivery: "both" }), {
+      send: async () => { attempts++; if (attempts < 3) throw new Error("offline"); },
+      persist: async () => {}
+    });
+    const rec = { id: "c", csvWritten: false };
+
+    for (let i = 0; i < 3; i++) { try { await deliver(full, rec); } catch (e) { /* retry */ } }
+
+    ok("both mode retried the email until it succeeded", attempts === 3, attempts);
+    ok("the CSV row was written exactly once across 3 attempts", sink.rows.length === 1,
+      sink.rows.length);
+    ok("the record remembers the row went out", rec.csvWritten === true);
+  }
+
+  {
+    /* If the CSV write itself fails, nothing is marked and no email goes either —
+       a half-delivered response would be worse than a retried one. */
+    const failing = { async append() { throw new Error("disk full"); } };
+    let mailed = 0;
+    const deliver = Submit.makeDeliverer(failing, () => ({ delivery: "both" }),
+      { send: async () => { mailed++; } });
+    const rec = { id: "d", csvWritten: false };
+    let threw = null;
+    try { await deliver(full, rec); } catch (e) { threw = e.message; }
+    ok("a failed CSV write propagates", threw === "disk full", threw);
+    ok("a failed CSV write is not marked written", rec.csvWritten === false);
+    ok("a failed CSV write skips the email", mailed === 0);
+  }
+
+  group("CSV sink");
+
+  /* No window and no Capacitor here, so the sink must fall back rather than
+     throw — the same path Firefox and iOS take. */
+  ok("falls back to download when no filesystem API exists",
+    CsvSink.mode() === "download", CsvSink.mode());
+  ok("a BOM is prepended so Excel reads UTF-8", CsvSink.BOM === "﻿");
+
+  /* The header goes in once, when the file is empty; every later response is a
+     bare row. Both branches build on csvHeader/csvRow, so the shape is checked
+     here even though the write itself needs a browser. */
+  const firstWrite = CsvSink.BOM + Submit.csvHeader() + "\r\n" + Submit.csvRow(full) + "\r\n";
+  const laterWrite = Submit.csvRow(sparse) + "\r\n";
+  ok("the first write carries the header", firstWrite.includes("responseId,submittedAt"));
+  ok("a later write carries no header", !laterWrite.includes("responseId,submittedAt"));
+  ok("appending the two yields a 2-row file",
+    (firstWrite + laterWrite).trimEnd().split("\r\n")
+      .filter((l) => !l.startsWith("responseId") && !l.startsWith(CsvSink.BOM + "responseId"))
+      .length >= 2);
 
   /* --------------------------------------------------------- the Pages copy
    * The web layer lives in www/, in docs/app/ (Pages) and inside the APK. If

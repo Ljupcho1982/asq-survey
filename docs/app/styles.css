@@ -337,7 +337,19 @@ body {
 }
 .field input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 
+.select {
+  background: var(--surface-2);
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  color: var(--ink);
+  font: inherit;
+  padding: 12px 14px;
+}
+.select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+
 .field-row { display: flex; flex-wrap: wrap; gap: 12px; }
+
+#csvBox[hidden], #emailBox[hidden] { display: none; }
 
 .note { margin: 0 0 16px; font-size: 13px; color: var(--ink-dim); line-height: 1.5; }
 .err { margin: 0 0 12px; color: var(--danger); font-size: 14px; }

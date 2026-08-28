@@ -18,11 +18,17 @@
 
   const SETTINGS_KEY = "asq.settings";
   const DB_NAME = "asq";
-  const DB_VERSION = 1;
+  const DB_VERSION = 2;              /* v2 adds the `handles` store for the CSV file */
   const STORE = "submissions";
+  const HANDLES = "handles";
   const KEEP_SENT_DAYS = 30;
 
   const DEFAULT_SETTINGS = {
+    /* Where completed responses go. "csv" writes them to a file on disk and needs
+       nothing else set up; "email" sends them through FormSubmit; "both" does
+       each and only counts a response delivered once both succeed. */
+    delivery: "csv",
+    csvFileName: "asq-responses.csv",
     /* Deliberately blank. The recipient is typed in on the device rather than
        committed to a file — see README, "First run". */
     recipient: "",
@@ -110,13 +116,15 @@
       return rec;
     }
 
-    /* send(payload) resolves on delivery and rejects otherwise. */
+    /* send(payload, record) resolves on delivery and rejects otherwise. The
+       record is passed so a partially-delivered response (CSV written, email
+       still failing) can remember what already went out and not repeat it. */
     async function flush(send) {
       const queue = await pending();
       let sent = 0, failed = 0;
       for (const rec of queue) {
         try {
-          await send(rec.payload);
+          await send(rec.payload, rec);
           await markSent(rec.id);
           sent++;
         } catch (err) {
@@ -184,10 +192,30 @@
         req.onupgradeneeded = () => {
           const db = req.result;
           if (!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE, { keyPath: "id" });
+          /* A FileSystemFileHandle is structured-cloneable but not serialisable,
+             so it has to live in IndexedDB rather than localStorage. */
+          if (!db.objectStoreNames.contains(HANDLES)) db.createObjectStore(HANDLES);
         };
-        req.onsuccess = () => resolve(req.result);
+        req.onsuccess = () => {
+          const db = req.result;
+          /* Another tab holding this database open would block the NEXT version
+             bump forever. Yielding here means an upgrade can always proceed. */
+          db.onversionchange = () => db.close();
+          resolve(db);
+        };
         req.onerror = () => reject(req.error);
+        /* Without this the promise never settles: an older connection elsewhere
+           blocks the upgrade, open() fires neither success nor error, and every
+           queue call hangs silently — the app looks alive but stores nothing.
+           A rejection instead leaves the response pending and surfaces the
+           reason. Retried on the next flush; closing the other tab clears it. */
+        req.onblocked = () => {
+          dbPromise = null;
+          reject(new Error("Storage upgrade blocked — close other tabs running ASQ Survey."));
+        };
       });
+      /* A failed open must not be cached, or the app never recovers. */
+      dbPromise = dbPromise.catch((e) => { dbPromise = null; throw e; });
       return dbPromise;
     }
 
@@ -201,10 +229,23 @@
       }));
     }
 
+    function handleTx(mode, fn) {
+      return open().then((db) => new Promise((resolve, reject) => {
+        const t = db.transaction(HANDLES, mode);
+        const req = fn(t.objectStore(HANDLES));
+        t.oncomplete = () => resolve(req && req.result);
+        t.onerror = () => reject(t.error);
+        t.onabort = () => reject(t.error);
+      }));
+    }
+
     return {
       all() { return tx("readonly", (s) => s.getAll()).then((r) => r || []); },
       put(record) { return tx("readwrite", (s) => s.put(record)); },
-      remove(id) { return tx("readwrite", (s) => s.delete(id)); }
+      remove(id) { return tx("readwrite", (s) => s.delete(id)); },
+      getHandle(key) { return handleTx("readonly", (s) => s.get(key)); },
+      putHandle(key, value) { return handleTx("readwrite", (s) => s.put(value, key)); },
+      removeHandle(key) { return handleTx("readwrite", (s) => s.delete(key)); }
     };
   }
 

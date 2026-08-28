@@ -24,7 +24,9 @@
   const badgeEl    = $("queueBadge");
 
   let settings = Store.loadSettings();
-  const queue = Store.makeQueue(Store.idbAdapter());
+  const adapter = Store.idbAdapter();
+  const queue = Store.makeQueue(adapter);
+  const sink = CsvSink.make(adapter);
 
   let answers = {};
   let index = 0;                 /* position in Q.SCREENS */
@@ -374,9 +376,11 @@
 
   /* ------------------------------------------------------------- submitting */
 
-  async function sendOne(payload) {
-    return Submit.send(payload, settings);
-  }
+  /* Routing lives in submit.js so the selftest can drive it; see makeDeliverer. */
+  const deliverOne = Submit.makeDeliverer(sink, () => settings, {
+    persist: (record) => adapter.put(record),
+    allPayloads: async () => (await queue.all()).map((r) => r.payload)
+  });
 
   async function submitResponse() {
     nextBtn.disabled = true;
@@ -390,7 +394,7 @@
     index = Q.SCREENS.findIndex((s) => s.kind === "thanks");
     render();
 
-    try { await queue.flush(sendOne); } catch (e) { /* stays pending, retried later */ }
+    try { await queue.flush(deliverOne); } catch (e) { /* stays pending, retried later */ }
     refreshBadge();
   }
 
@@ -411,12 +415,12 @@
   }
 
   window.addEventListener("online", async () => {
-    try { await queue.flush(sendOne); } catch (e) { /* still offline */ }
+    try { await queue.flush(deliverOne); } catch (e) { /* still offline */ }
     refreshBadge();
   });
   setInterval(async () => {
     if (!navigator.onLine) return;
-    try { await queue.flush(sendOne); } catch (e) { /* nothing to do */ }
+    try { await queue.flush(deliverOne); } catch (e) { /* nothing to do */ }
     refreshBadge();
   }, 60000);
 
@@ -447,12 +451,63 @@
     startIdleTimer();
   }
 
+  /* Shows only the fields the chosen delivery actually needs, and reports where
+     the CSV will land — which differs per platform, so it is read from the sink
+     rather than described in prose the operator has to translate. */
+  async function refreshDeliveryUI() {
+    const mode = $("setDelivery").value;
+    $("csvBox").hidden = mode === "email";
+    $("emailBox").hidden = mode === "csv";
+
+    if (mode === "email") return;
+    const pending = Object.assign({}, settings, { csvFileName: $("setCsvName").value.trim() });
+    const where = await sink.describe(pending);
+    const m = sink.mode();
+
+    $("csvPickBtn").hidden = m !== "fsaccess";
+    $("csvOpenBtn").hidden = m === "capacitor";
+
+    if (m === "capacitor") {
+      $("csvWhere").textContent = "Responses are appended to " + where +
+        " on this tablet. Copy it off over USB, or with any file manager.";
+    } else if (m === "fsaccess") {
+      $("csvWhere").textContent = where
+        ? "Appending to " + where + ". The file stays where you put it."
+        : "No file chosen yet — pick one and every response will be appended to it.";
+      $("csvPickBtn").textContent = where ? "Change the CSV file…" : "Choose the CSV file…";
+    } else {
+      $("csvWhere").textContent = "This browser cannot append to a file, so each response " +
+        "re-downloads the full CSV to your Downloads folder. Chrome or Edge can write to one " +
+        "file properly.";
+    }
+  }
+
+  $("setDelivery").addEventListener("change", refreshDeliveryUI);
+
+  $("csvPickBtn").addEventListener("click", async () => {
+    try {
+      const name = await sink.connect(Object.assign({}, settings,
+        { csvFileName: $("setCsvName").value.trim() }));
+      if (name) $("setCsvName").value = name;
+      $("queueMsg").textContent = "CSV file connected.";
+    } catch (e) {
+      /* An AbortError just means the operator closed the picker. */
+      if (e.name !== "AbortError") $("queueMsg").textContent = "Could not connect: " + e.message;
+    }
+    refreshDeliveryUI();
+  });
+
+  $("csvOpenBtn").addEventListener("click", () => $("exportBtn").click());
+
   $("pinCancel").addEventListener("click", closeSettings);
   $("pinOk").addEventListener("click", () => {
     if ($("pinInput").value !== String(settings.pin)) { $("pinErr").hidden = false; return; }
     $("pinStep").hidden = true;
     $("settingsStep").hidden = false;
+    $("setDelivery").value = settings.delivery || "csv";
+    $("setCsvName").value = settings.csvFileName || "asq-responses.csv";
     $("setRecipient").value = settings.recipient || "";
+    refreshDeliveryUI();
     $("setAirport").value   = settings.airport || "";
     $("setTerminal").value  = settings.terminal || "";
     $("setGate").value      = settings.gate || "";
@@ -466,6 +521,8 @@
   $("settingsClose").addEventListener("click", closeSettings);
   $("settingsSave").addEventListener("click", () => {
     settings = Store.saveSettings({
+      delivery: $("setDelivery").value,
+      csvFileName: $("setCsvName").value.trim() || Store.DEFAULT_SETTINGS.csvFileName,
       recipient: $("setRecipient").value.trim(),
       airport: $("setAirport").value.trim(),
       terminal: $("setTerminal").value.trim(),
@@ -484,7 +541,7 @@
     const msg = $("queueMsg");
     msg.textContent = "Sending…";
     try {
-      const r = await queue.flush(sendOne);
+      const r = await queue.flush(deliverOne);
       msg.textContent = "Sent " + r.sent + ", " + r.remaining + " still pending" +
         (r.failed ? " (last attempt failed)" : "") + ".";
     } catch (e) {
