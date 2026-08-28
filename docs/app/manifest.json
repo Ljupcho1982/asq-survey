@@ -1,0 +1,16 @@
+{
+  "name": "ASQ Survey",
+  "short_name": "ASQ",
+  "description": "Airport Service Quality departures survey — rate your experience at the airport today.",
+  "start_url": "index.html",
+  "scope": ".",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#0d1b2a",
+  "theme_color": "#0d1b2a",
+  "lang": "en",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" },
+    { "src": "icon-maskable.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}

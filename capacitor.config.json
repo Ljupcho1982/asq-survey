@@ -1,0 +1,11 @@
+{
+  "appId": "mk.semov.asq",
+  "appName": "ASQ Survey",
+  "webDir": "www",
+  "android": {
+    "backgroundColor": "#0d1b2a"
+  },
+  "server": {
+    "androidScheme": "https"
+  }
+}

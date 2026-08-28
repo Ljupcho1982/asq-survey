@@ -1,0 +1,11 @@
+node_modules/
+
+# Capacitor regenerates the whole android/ project from capacitor.config.json and
+# www/, so it is a build output, not source. build-apk.ps1 runs `npx cap add`.
+android/
+
+# The APK ships as a Releases asset, not in the tree.
+*.apk
+
+.DS_Store
+Thumbs.db

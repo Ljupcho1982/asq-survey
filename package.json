@@ -1,0 +1,29 @@
+{
+  "name": "asq",
+  "version": "1.0.0",
+  "description": "ASQ Survey — an ACI Airport Service Quality departures questionnaire running as a gate kiosk, emailing every completed response as structured data.",
+  "scripts": {
+    "serve": "python -m http.server 4211 --directory www",
+    "apk": "powershell -ExecutionPolicy Bypass -File ./build-apk.ps1",
+    "test": "node tools/selftest.js",
+    "pages": "node tools/sync-pages.js",
+    "qr": "node tools/make-qr.js && node tools/verify-qr.js"
+  },
+  "license": "MIT",
+  "type": "commonjs",
+  "dependencies": {
+    "@capacitor/android": "^8.4.2",
+    "@capacitor/cli": "^8.4.2",
+    "@capacitor/core": "^8.4.2"
+  },
+  "devDependencies": {
+    "jsqr": "^1.4.0",
+    "pngjs": "^7.0.0",
+    "qrcode": "^1.5.4"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Ljupcho1982/asq-survey.git"
+  },
+  "homepage": "https://ljupcho1982.github.io/asq-survey/"
+}

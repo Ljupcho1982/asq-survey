@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ASQ Survey — airport passenger satisfaction kiosk</title>
+<meta name="description" content="A gate kiosk that runs an ACI-style Airport Service Quality departures questionnaire and emails every response as structured data. Offline-first, no backend.">
+<meta name="theme-color" content="#0d1b2a">
+<link rel="icon" href="app/icon.svg" type="image/svg+xml">
+<meta property="og:title" content="ASQ Survey">
+<meta property="og:description" content="A gate kiosk that runs an airport service-quality departures questionnaire and emails every response as structured data.">
+<meta property="og:type" content="website">
+<style>
+:root {
+  --bg: #0d1b2a; --surface: #16293d; --surface-2: #1e3450; --line: #2b4763;
+  --ink: #eaf2fb; --ink-dim: #9db3cb; --accent: #38bdf8; --accent-ink: #04222f;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 400 17px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+.wrap { max-width: 780px; margin: 0 auto; padding: 48px 20px 80px; }
+header { display: flex; align-items: center; gap: 16px; margin-bottom: 40px; }
+header svg { width: 56px; height: 56px; flex: 0 0 auto; }
+h1 { margin: 0; font-size: 30px; letter-spacing: -.02em; }
+.sub { margin: 2px 0 0; color: var(--ink-dim); font-size: 16px; }
+h2 { font-size: 20px; margin: 40px 0 12px; letter-spacing: -.01em; }
+p { margin: 0 0 16px; }
+a { color: var(--accent); }
+.lede { font-size: 19px; color: var(--ink); }
+.dim { color: var(--ink-dim); }
+
+.cta { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; margin: 28px 0 8px; }
+.btn {
+  display: inline-block; text-decoration: none; font-weight: 600;
+  padding: 15px 28px; border-radius: 12px; border: 1.5px solid transparent;
+}
+.btn.primary { background: var(--accent); color: var(--accent-ink); }
+.btn.ghost { border-color: var(--line); color: var(--ink); }
+
+.qr { display: flex; align-items: center; gap: 18px; margin-top: 26px;
+      background: var(--surface); border: 1px solid var(--line);
+      border-radius: 14px; padding: 16px; }
+.qr img { width: 132px; height: 132px; border-radius: 8px; display: block; }
+.qr p { margin: 0; font-size: 15px; color: var(--ink-dim); }
+
+ul { padding-left: 22px; margin: 0 0 16px; }
+li { margin-bottom: 8px; }
+
+table { width: 100%; border-collapse: collapse; margin: 0 0 16px; font-size: 15px; }
+th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); }
+th { color: var(--ink-dim); font-weight: 600; }
+
+.card { background: var(--surface); border: 1px solid var(--line);
+        border-radius: 14px; padding: 20px; margin: 0 0 16px; }
+code { background: var(--surface-2); padding: 2px 6px; border-radius: 5px;
+       font-size: 14px; font-family: ui-monospace, Consolas, monospace; }
+.steps { counter-reset: s; list-style: none; padding: 0; }
+.steps li { counter-increment: s; padding-left: 38px; position: relative; margin-bottom: 14px; }
+.steps li::before {
+  content: counter(s); position: absolute; left: 0; top: 1px;
+  width: 26px; height: 26px; border-radius: 50%;
+  background: var(--surface-2); border: 1px solid var(--line);
+  display: grid; place-items: center; font-size: 14px; color: var(--accent);
+}
+.notice { border-left: 3px solid var(--accent); padding: 2px 0 2px 16px;
+          color: var(--ink-dim); font-size: 15px; margin: 0 0 16px; }
+footer { margin-top: 56px; padding-top: 24px; border-top: 1px solid var(--line);
+         color: var(--ink-dim); font-size: 14px; }
+@media (max-width: 560px) {
+  .wrap { padding: 32px 18px 60px; }
+  h1 { font-size: 25px; }
+  .qr { flex-direction: column; align-items: flex-start; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <svg viewBox="0 0 512 512" aria-hidden="true">
+    <rect width="512" height="512" rx="96" fill="#16293d"/>
+    <path d="M256 92 L318 300 L256 262 L194 300 Z" fill="#38bdf8"/>
+    <path d="M84 330 L428 330 L382 386 L130 386 Z" fill="#6aa5c9"/>
+    <circle cx="256" cy="432" r="26" fill="#9db3cb"/>
+  </svg>
+  <div>
+    <h1>ASQ Survey</h1>
+    <p class="sub">Airport passenger satisfaction, collected at the gate</p>
+  </div>
+</header>
+
+<p class="lede">A tablet at the departure gate asks passengers how their journey through the
+airport actually went — 31 service-quality items, five emotions, and two open questions — and
+emails every completed response out as structured data.</p>
+
+<p class="dim">No backend, no database, no API keys. Responses are written to the device first and
+sent second, so a Wi-Fi drop in the terminal costs nothing.</p>
+
+<div class="cta">
+  <a class="btn primary" href="https://github.com/Ljupcho1982/asq-survey/releases/latest/download/ASQ-debug.apk">Download the Android APK</a>
+  <a class="btn ghost" href="app/index.html">Open it in the browser</a>
+  <a class="btn ghost" href="https://github.com/Ljupcho1982/asq-survey">Source on GitHub</a>
+</div>
+
+<div class="qr">
+  <img src="qr.png" alt="QR code linking to this page">
+  <p>Point a tablet camera here to open this page and install it on the device.</p>
+</div>
+
+<h2>What it collects</h2>
+<table>
+  <tr><th>Section</th><th>Questions</th></tr>
+  <tr><td>Arrival at the airport</td><td>3</td></tr>
+  <tr><td>Check-in</td><td>3</td></tr>
+  <tr><td>Security screening</td><td>3</td></tr>
+  <tr><td>Border / passport control</td><td>2</td></tr>
+  <tr><td>Shopping / dining</td><td>5</td></tr>
+  <tr><td>Gate areas</td><td>2</td></tr>
+  <tr><td>Throughout the airport</td><td>10</td></tr>
+  <tr><td>Airport atmosphere</td><td>3</td></tr>
+  <tr><td colspan="2" class="dim">plus 2 overall items, 5 emotions, crowd perception,
+      13 profiling questions and 2 open-ended</td></tr>
+</table>
+
+<h2>Where the responses go</h2>
+<p>Each completed survey becomes one email, carrying the same data three ways so it is usable
+whether you are reading it or parsing it:</p>
+<ul>
+  <li>a <strong>Question&nbsp;→&nbsp;Answer table</strong>, readable as an email with no tooling</li>
+  <li><code>payload_json</code> — the full nested response, for parsing</li>
+  <li><code>csv_header</code> and <code>csv_row</code> — for pasting straight into a spreadsheet</li>
+</ul>
+<p class="notice">The recipient address is never in the code. You type it into the app's settings on
+the device itself, then swap in the forwarding alias the mail relay gives you back.</p>
+
+<h2>Built for a kiosk</h2>
+<ul>
+  <li><strong>Idle reset</strong> — 90 seconds without a touch discards the half-finished response,
+      so one passenger's answers can never leak into the next one's</li>
+  <li><strong>Settings behind five taps and a PIN</strong> — a passenger cannot reach the recipient</li>
+  <li><strong>Offline queue</strong> — responses flush when the network returns; the header shows
+      how many are waiting</li>
+  <li><strong>Wake lock</strong> — the screen stays on, and the lock is retaken after backgrounding</li>
+</ul>
+
+<h2>Setting it up</h2>
+<ol class="steps">
+  <li>Install the APK on the tablet, or just open the browser version and add it to the home screen.</li>
+  <li>Tap the logo five times, enter the PIN (<code>1982</code> by default — change it).</li>
+  <li>Enter your recipient address, the airport code, terminal and gate. Save.</li>
+  <li>Complete one survey to trigger the mail relay's confirmation email, and click its link.</li>
+  <li>Paste the alias it replies with back into the recipient field, so the plain address is no
+      longer stored on a device standing in a public hall.</li>
+  <li>Pin the app with Android's screen pinning and leave it at the gate.</li>
+</ol>
+
+<h2>Privacy</h2>
+<p class="dim">The survey records no name, seat or booking reference, and the welcome screen tells
+passengers so. Responses stay in the tablet's local storage until they are emailed, and for 30 days
+after; <em>Clear queue</em> in settings deletes them at once. Decide who owns the recipient mailbox,
+and how long responses live there, before a tablet goes airside.</p>
+
+<footer>
+  <p><strong>Not affiliated with, endorsed by, or connected to Airports Council International.</strong>
+  ASQ and Airport Service Quality are ACI's programme names. This is an independent open-source tool
+  that asks passengers about their airport experience; it is not ACI's survey, it produces no ACI
+  benchmark and no ACI ranking, and it contains none of ACI's data.</p>
+  <p>MIT licensed. Built by <a href="https://github.com/Ljupcho1982">Ljupcho Semov</a>.</p>
+</footer>
+
+</div>
+</body>
+</html>

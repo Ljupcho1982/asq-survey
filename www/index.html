@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ASQ Survey</title>
+<meta name="description" content="Airport Service Quality departures survey — rate your experience at the airport today.">
+<meta name="theme-color" content="#0d1b2a">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="top">
+  <!-- Five taps here open Settings. Deliberately not a visible button: on a
+       kiosk the recipient address must not be one stray tap away. -->
+  <button id="brand" class="brand" aria-label="ASQ Survey">
+    <svg class="logo" viewBox="0 0 48 48" aria-hidden="true">
+      <path class="l-tail" d="M24 4 L30 26 L24 22 L18 26 Z"/>
+      <path class="l-wing" d="M4 30 L44 30 L38 36 L10 36 Z"/>
+      <circle class="l-dot" cx="24" cy="41" r="2.6"/>
+    </svg>
+    <span class="brand-text">
+      <span class="brand-name">ASQ Survey</span>
+      <span class="brand-sub" id="brandSub">Skopje International Airport</span>
+    </span>
+  </button>
+
+  <div class="top-right">
+    <span id="queueBadge" class="badge" hidden></span>
+    <div class="progress" id="progress" hidden>
+      <div class="progress-bar"><span id="progressFill"></span></div>
+      <span class="progress-text" id="progressText"></span>
+    </div>
+  </div>
+</header>
+
+<main id="screen" class="screen" aria-live="polite"></main>
+
+<footer class="nav" id="nav" hidden>
+  <button id="backBtn" class="btn ghost">Back</button>
+  <p id="hint" class="hint"></p>
+  <button id="nextBtn" class="btn primary">Next</button>
+</footer>
+
+<!-- Settings lives outside the survey flow so an idle reset can never strand a
+     passenger inside it. -->
+<div id="settingsPane" class="overlay" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-label="Settings">
+    <h2>Settings</h2>
+
+    <div id="pinStep">
+      <label class="field">
+        <span>PIN</span>
+        <input id="pinInput" type="password" inputmode="numeric" autocomplete="off" placeholder="••••">
+      </label>
+      <p class="err" id="pinErr" hidden>Wrong PIN.</p>
+      <div class="sheet-actions">
+        <button id="pinCancel" class="btn ghost">Cancel</button>
+        <button id="pinOk" class="btn primary">Unlock</button>
+      </div>
+    </div>
+
+    <div id="settingsStep" hidden>
+      <label class="field">
+        <span>Recipient — email address, or the FormSubmit alias</span>
+        <input id="setRecipient" type="text" autocomplete="off" spellcheck="false"
+               placeholder="name@example.org">
+      </label>
+      <p class="note" id="recipientNote">
+        On the first submission FormSubmit emails a confirmation link. Click it, then
+        paste the alias it replies with here so the plain address leaves the device.
+      </p>
+
+      <div class="field-row">
+        <label class="field"><span>Airport</span>
+          <input id="setAirport" type="text" autocomplete="off" placeholder="SKP"></label>
+        <label class="field"><span>Terminal</span>
+          <input id="setTerminal" type="text" autocomplete="off" placeholder="T1"></label>
+        <label class="field"><span>Gate / flight</span>
+          <input id="setGate" type="text" autocomplete="off" placeholder="A3"></label>
+      </div>
+
+      <div class="field-row">
+        <label class="field"><span>Idle reset (seconds)</span>
+          <input id="setIdle" type="number" min="20" max="600" step="10"></label>
+        <label class="field"><span>Thank-you screen (seconds)</span>
+          <input id="setThanks" type="number" min="2" max="60" step="1"></label>
+        <label class="field"><span>PIN</span>
+          <input id="setPin" type="text" inputmode="numeric" autocomplete="off"></label>
+      </div>
+
+      <div class="queue-box">
+        <p id="queueStat">Queue: —</p>
+        <div class="sheet-actions left">
+          <button id="flushBtn" class="btn ghost">Send pending now</button>
+          <button id="exportBtn" class="btn ghost">Export CSV</button>
+          <button id="clearBtn" class="btn danger">Clear queue</button>
+        </div>
+        <p class="note" id="queueMsg"></p>
+      </div>
+
+      <div class="sheet-actions">
+        <button id="settingsClose" class="btn ghost">Close</button>
+        <button id="settingsSave" class="btn primary">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="questionnaire.js"></script>
+<script src="store.js"></script>
+<script src="submit.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
