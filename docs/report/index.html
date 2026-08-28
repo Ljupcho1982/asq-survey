@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ASQ Report</title>
+<meta name="description" content="Turn the kiosk's CSV exports into an airport service quality report — category scores, all 31 items, action priorities and passenger profile.">
+<meta name="theme-color" content="#0d1b2a">
+<link rel="icon" href="../app/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="report.css">
+</head>
+<body>
+
+<header class="top no-print">
+  <div class="brand">
+    <svg class="logo" viewBox="0 0 512 512" aria-hidden="true">
+      <rect width="512" height="512" rx="96" fill="#16293d"/>
+      <path d="M256 92 L318 300 L256 262 L194 300 Z" fill="#38bdf8"/>
+      <path d="M84 330 L428 330 L382 386 L130 386 Z" fill="#6aa5c9"/>
+      <circle cx="256" cy="432" r="26" fill="#9db3cb"/>
+    </svg>
+    <div>
+      <h1>ASQ Report</h1>
+      <p class="sub">Passenger satisfaction, from the kiosk's own CSV files</p>
+    </div>
+  </div>
+  <div class="top-actions" id="topActions" hidden>
+    <button id="addBtn" class="btn ghost">Add more files</button>
+    <button id="xlsBtn" class="btn ghost">Export aggregates</button>
+    <button id="printBtn" class="btn primary">Print / PDF</button>
+  </div>
+</header>
+
+<main>
+
+  <section id="dropzone" class="dropzone no-print">
+    <div class="dz-inner">
+      <svg class="dz-icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 16V4m0 0L8 8m4-4 4 4" fill="none" stroke="currentColor"
+              stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" fill="none" stroke="currentColor"
+              stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+      <h2>Drop the CSV files here</h2>
+      <p>The files the kiosk writes — <code>asq-responses.csv</code> from each tablet, or an
+         export from Settings. Add as many as you like; duplicates are removed automatically.</p>
+      <button id="pickBtn" class="btn primary">Choose files…</button>
+      <input id="fileInput" type="file" accept=".csv,text/csv" multiple hidden>
+      <p class="dz-note">Nothing is uploaded. The files are read in this browser and stay
+         on your machine.</p>
+    </div>
+  </section>
+
+  <div id="warnings" class="warnings" hidden></div>
+  <div id="report" class="report"></div>
+
+</main>
+
+<footer class="foot no-print">
+  <p>Part of <a href="../">ASQ Survey</a> · not affiliated with Airports Council International</p>
+</footer>
+
+<script src="../app/questionnaire.js"></script>
+<script src="parse.js"></script>
+<script src="stats.js"></script>
+<script src="report.js"></script>
+</body>
+</html>

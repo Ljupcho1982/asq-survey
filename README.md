@@ -69,6 +69,37 @@ into a spreadsheet. The subject is `ASQ SKP — <response id> — <date>`.
 **Export CSV** in Settings writes everything currently stored to a file at any time, whatever the
 delivery mode.
 
+## Reading the results — the report tool
+
+<https://ljupcho1982.github.io/asq-survey/report/> (source in `docs/report/`)
+
+Drop in the CSV exports from every tablet. They are merged, duplicates dropped by `responseId`,
+and the report is built **in your browser** — the files are never uploaded, which matters when the
+free-text came from members of the public. It prints cleanly to PDF, and exports the aggregates as
+a separate CSV for anyone who wants to check the arithmetic without receiving passenger comments.
+
+It follows ACI's method so the numbers are comparable: means on the 1–5 scale, **N/A excluded rather
+than counted as a low score**, and category averages weighted by each item's respondent count.
+
+| Section | What it shows |
+|---|---|
+| Headline | Overall satisfaction and experience, % rating 4–5, score distribution |
+| **What to fix first** | Items scored below your own average **and** named among a passenger's 3 most important |
+| By category | The 8 ACI categories, weighted |
+| Matters most | Q11 importance, beside your score on each item |
+| All items | Every service item ranked, with n and N/A counts |
+| By passenger type | Overall split by reason for travel, flight status, group, age |
+| Emotions | The five emotions, plus crowd perception |
+| Movement | Month-on-month, with the items that rose and fell most |
+| Who answered | Full passenger profile and travel behaviour |
+| Comments | Both open-ended questions, verbatim |
+
+The **what to fix first** view is the part ACI's deck does not give you. An item can score badly and
+still not be worth acting on — if passengers never named it important, fixing it changes nothing
+they care about.
+
+Every figure carries its base (`n`), and a report built on fewer than 30 responses says so.
+
 ## Kiosk behaviour
 
 - **Idle reset** — 90 seconds of no interaction mid-survey discards the partial response and returns

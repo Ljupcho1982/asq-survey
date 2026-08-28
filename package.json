@@ -5,7 +5,7 @@
   "scripts": {
     "serve": "python -m http.server 4211 --directory www",
     "apk": "powershell -ExecutionPolicy Bypass -File ./build-apk.ps1",
-    "test": "node tools/selftest.js",
+    "test": "node tools/selftest.js && node tools/report-selftest.js",
     "pages": "node tools/sync-pages.js",
     "qr": "node tools/make-qr.js && node tools/verify-qr.js"
   },
