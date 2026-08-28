@@ -33,6 +33,9 @@ code { background: var(--surface-2); padding: 1px 5px; border-radius: 4px; font-
 .brand h1 { margin: 0; font-size: 21px; }
 .sub { margin: 1px 0 0; color: var(--ink-dim); font-size: 14px; }
 .top-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+/* A display rule beats the user-agent's [hidden] { display: none }, so the
+   toolbar has to opt back out or it shows before any file is loaded. */
+.top-actions[hidden] { display: none; }
 
 .btn {
   border: 1.5px solid transparent; border-radius: 10px; font: inherit; font-weight: 550;
