@@ -160,6 +160,23 @@
         return fsConnect(adapter, settings);
       },
 
+      /* Creates the file now, with the operator standing there, so that on an
+         older Android the storage-permission dialog appears in Settings rather
+         than in front of a passenger halfway through a survey. Also proves the
+         path is writable before the kiosk is left running at a gate. */
+      async probe(settings) {
+        if (mode() !== "capacitor") return null;
+        const fs = cap();
+        const path = capPath(settings);
+        try { await fs.stat({ path: path, directory: "DOCUMENTS" }); return "exists"; }
+        catch (e) { /* not there yet — create it below */ }
+        try { await fs.mkdir({ path: DIR, directory: "DOCUMENTS", recursive: true }); }
+        catch (e) { /* already there */ }
+        await fs.writeFile({ path: path, directory: "DOCUMENTS", encoding: "utf8",
+                             data: BOM + Submit.csvHeader() + "\r\n" });
+        return "created";
+      },
+
       async describe(settings) {
         const m = mode();
         if (m === "capacitor") return capDescribe(settings);

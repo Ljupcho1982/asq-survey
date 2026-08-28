@@ -519,7 +519,7 @@
   $("pinInput").addEventListener("keydown", (e) => { if (e.key === "Enter") $("pinOk").click(); });
 
   $("settingsClose").addEventListener("click", closeSettings);
-  $("settingsSave").addEventListener("click", () => {
+  $("settingsSave").addEventListener("click", async () => {
     settings = Store.saveSettings({
       delivery: $("setDelivery").value,
       csvFileName: $("setCsvName").value.trim() || Store.DEFAULT_SETTINGS.csvFileName,
@@ -534,6 +534,19 @@
     $("brandSub").textContent = settings.airport
       ? settings.airport + (settings.terminal ? " · " + settings.terminal : "")
       : "Airport Service Quality";
+
+    /* Create the file now rather than on the first submission — an Android
+       permission dialog belongs in front of the operator, not a passenger. */
+    if (settings.delivery !== "email") {
+      try {
+        const r = await sink.probe(settings);
+        if (r === "created") $("queueMsg").textContent = "CSV file created.";
+      } catch (e) {
+        $("queueMsg").textContent = "Could not write the CSV file: " + e.message;
+        refreshDeliveryUI();
+        return;                       /* stay open so the problem is dealt with now */
+      }
+    }
     closeSettings();
   });
 

@@ -53,6 +53,25 @@ if (-not (Test-Path $localProps) -or (Get-Content $localProps -Raw) -notmatch 's
 Write-Host "==> syncing web assets" -ForegroundColor Cyan
 npx cap sync android
 
+# The CSV goes to the shared Documents folder. Android 11+ needs no permission
+# for that (the Filesystem plugin short-circuits when a `directory` is given, and
+# always on API 33+), but Android 10 and older do - and without these lines the
+# plugin asks for a permission the app never declared, the write fails, and every
+# response silently piles up in the queue instead. maxSdkVersion keeps them off
+# newer devices, where they are useless and merely look invasive.
+$manifest = 'android\app\src\main\AndroidManifest.xml'
+$mf = Get-Content $manifest -Raw
+if ($mf -notmatch 'WRITE_EXTERNAL_STORAGE') {
+  Write-Host "==> adding legacy storage permissions to the manifest" -ForegroundColor Cyan
+  $perms = @"
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+</manifest>
+"@
+  $mf = $mf -replace '</manifest>', $perms
+  Set-Content $manifest $mf -NoNewline
+}
+
 # Launcher icons are vector drawables, not PNG - there is no SVG rasterizer on
 # this machine, so the mipmaps cannot be generated from the image.
 Write-Host "==> installing vector launcher icons" -ForegroundColor Cyan
